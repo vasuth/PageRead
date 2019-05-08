@@ -1,10 +1,15 @@
 <?php
 
-// Read the content of a webpage
+// 
+// Read webpage content with cURL
+// Return the array of body and page size (in kb)
+//
     function getPage( $url ){
 
-	if (!function_exists('curl_init')) {	// checking curl installation
-		die("cURL is not installed. Please install and try again.");
+	// Checking cURL installation	
+	if (!function_exists('curl_init')) {
+	    echo "cURL is not installed. Please install and try again.";
+	    return 0;
 	}
 
 	$options = array(
@@ -17,83 +22,117 @@
 	$ch = curl_init( $url );
         curl_setopt_array( $ch, $options );	// set up curl
 
-    // store cookies
+	// Store cookies
 	$cookie_file = "cookie.txt";
 	curl_setopt($ch, CURLOPT_COOKIESESSION, true);
 	curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
 	curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
 
-    // read content
+	// Read content and error check
 	$content = curl_exec( $ch );
 
-    // separate header and body
+	if(curl_errno($ch)){
+	    echo "Request Error: " . curl_error($ch);
+	    return 0;
+	}
+
+	// Separate header and body
 	$header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 	$header = substr($content, 0, $header_size);
 	$body = substr($content, $header_size);
 
-    // Downloaded page size in KB
-        $size = round(curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD) / 1024, 2);
+	// Store page size in KB
+        $size = round(curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD) / 1024, 1);
 	
-    // close session and returns the array of [body, page size]
+	// Close session
 	curl_close($ch);
 
-    return $pagecontent = array(0 => $body, 1 => $size);
-}
+	// Return the array of [body, page size]
+	return $pagecontent = array('body' => $body, 'size' => $size);
+    }
+
+// 
+// Collect data from the webpage
+// Return the JSON array of collected info
+//
+    function getData( $url ){
+
+	// Read page content and size
+	$readresult = getPage($url);
+
+	// Convert & to &amp
+	$pagebody = preg_replace('/&(?![A-Za-z0-9#]{1,7};)/','&amp;', $readresult['body']);
+
+	// Initiate DOMdocument for processing the page
+	$dom = new \DOMDocument();
+	@$dom->loadHTML($pagebody);
+
+	// Select div classes "products " with the individual items
+	$xpath = new \DOMXpath($dom);
+	$products = $xpath->query('//div[@class="product "]');
+
+	// Collect data of individual items
+
+	$results = [];		// Initiate results array
+	$total = 0;		// Initiate total price
+
+	foreach($products as $elements) {	// Read single products
+
+	    $table = [];
+		
+	    $item = $elements->getElementsByTagName("a");	// HTML references with tag "a"
+	    $title = trim(preg_replace("/[\r\n\xC2\xA0]+/", " ", $item[0]->nodeValue));	// Description of the HTML tag
+											// without special characters
+	    $href = $item[0]->getAttribute("href");		// Web address of the individual items
+
+	    // Collect unit prices with tag "p"
+	    $pricePerUnit = $elements->getElementsByTagName("p");
+	    $unitprice = 0;
+	    foreach($pricePerUnit as $number) {
+		if ( strlen($number->nodeValue) == 25 ) {
+		    $unitprice = number_format(substr($number->nodeValue,14,4),2);
+		    break;
+		}
+	    }
+
+	    // Sum of unit prices
+	    $total += $unitprice;
+
+	    // Read information from the individual link of items
+	    $link = getPage($href);
+	    $refpage = preg_replace('/&(?![A-Za-z0-9#]{1,7};)/','&amp;', $link['body']);
+	    $ref = new \DOMDocument();		// Initiate a new DOM document
+	    @$ref->loadHTML($refpage);
+	    $xpath = new \DOMXpath($ref);	
+
+	    // Select div class "productText" or "itemTypeGroupContainer productText"
+	    // for the detailed description of individal items 	
+	    $producttext = $xpath->query('//div[@class="productText"]');
+	    if ( $producttext->length == 0) {
+		$producttext = $xpath->query('//div[@class="itemTypeGroupContainer productText"]');
+	    } 
+	    $description = trim(preg_replace("/[\r\n\xC2\xA0]+/", " ", $producttext[0]->nodeValue));
+
+	    // Create table of results
+	    $table = array('title' => $title, 'size' => $link['size']."kb", 'unit_price' => $unitprice, 'description' => $description);
+
+	    array_push($results, $table);
+	}
+
+    // Return JSON array
+    return json_encode( array( 
+				"results" => $results, 
+				"total" => number_format($total,2)  
+			));
+
+    }
 
 
+
+// Webpage to read
 $pagename = "https://www.sainsburys.co.uk/webapp/wcs/stores/servlet/CategoryDisplay?listView=true&orderBy=FAVOURITES_FIRST&parent_category_rn=12518&top_category=12518&langId=44&beginIndex=0&pageSize=20&catalogId=10137&searchTerm=&categoryId=185749&listId=&storeId=10151&promotionId=#langId=44&storeId=10151&catalogId=10137&categoryId=185749&parent_category_rn=12518&top_category=12518&pageSize=20&orderBy=FAVOURITES_FIRST&searchTerm=&beginIndex=0&hideFilters=true";
 
-$result = getPage($pagename);
-
-echo $result[1];
-echo "<br>";
-
-$page1 = preg_replace('/&(?![A-Za-z0-9#]{1,7};)/','&amp;', $result[0]);
-
-$dom = new \DOMDocument();
-@$dom->loadHTML($page1);
-
-$xpath = new \DOMXpath($dom);
-$productsinfo = $xpath->query('//div[@class="productInfo"]');
-
-// collect all links in class "productinfo"
-$products = [];
-foreach($productsinfo as $container) {
-   $links = [];
-   $aitem = $container->getElementsByTagName("a");
-     foreach($aitem as $item) {
-       $href =  $item->getAttribute("href");
-       $text = trim(preg_replace("/[\r\n]+/", " ", $item->nodeValue));
-       $links[] = array('href' => $href, 'text' => $text);
-     }
-   array_push($products, $links);
-}
-
-$hreftext = array_column($products, '0');
-//print_r($hreftext);
-
-//$table = [];
-//foreach($products as $counter) {
-//   while (sizeof($counter) > 1) {
-//      
-//   }
-//}
-
-
-
-$unitprice = $xpath->query('//p[@class="pricePerUnit"]');
-
-// collect all unit prices in class "pricePerUnit"
-$uprices = [];
-foreach($unitprice as $count) {
-   $uprices[] = substr($count->nodeValue,14,4);
-}
-
-//foreach($uprices as $count) {
-//   echo $count." , ".substr($count,14,4)."<br>";
-//}
-
-print_r($uprices);
-
+$data = getData($pagename);
+print_r($data);
 
 ?>
