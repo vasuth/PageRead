@@ -4,7 +4,7 @@ ReadPage is a test application to collect information - name, price and descript
 
 ## Usage
 
-From command line run 'php -f ReadPage.php' or load the code into a web browser with a running web server and PHP.
+From command line run `php -f ReadPage.php` or load the code into a web browser with a running web server and PHP.
 
 The code uses cURL to read the webpage and DOMDocument to access data.
 

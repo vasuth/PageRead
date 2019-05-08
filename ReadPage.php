@@ -87,10 +87,10 @@
 
 	    // Collect unit prices with tag "p"
 	    $pricePerUnit = $elements->getElementsByTagName("p");
-	    $unitprice = 0;
+	    $unitprice = 0.;
 	    foreach($pricePerUnit as $number) {
 		if ( strlen($number->nodeValue) == 25 ) {
-		    $unitprice = number_format(substr($number->nodeValue,14,4),2);
+		    $unitprice = floatval(substr($number->nodeValue,14,4));
 		    break;
 		}
 	    }
@@ -122,7 +122,7 @@
     // Return JSON array
     return json_encode( array( 
 				"results" => $results, 
-				"total" => number_format($total,2)  
+				"total" => $total  
 			));
 
     }
