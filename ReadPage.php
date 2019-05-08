@@ -71,6 +71,11 @@
 	$xpath = new \DOMXpath($dom);
 	$products = $xpath->query('//div[@class="product "]');
 
+        if ($products->length == 0) {	// Check whether product fields were found
+	    echo "No products found.";
+	    return 0;
+        };
+
 	// Collect data of individual items
 
 	$results = [];		// Initiate results array
@@ -87,6 +92,12 @@
 
 	    // Collect unit prices with tag "p"
 	    $pricePerUnit = $elements->getElementsByTagName("p");
+
+            if ($pricePerUnit->length == 0) {	// Check whether fields with unitprice were found
+	        echo "No unitprice found.";
+	        return 0;
+            };
+
 	    $unitprice = 0.;
 	    foreach($pricePerUnit as $number) {
 		if ( strlen($number->nodeValue) == 25 ) {
