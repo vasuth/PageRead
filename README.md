@@ -8,7 +8,7 @@ From command line run `php -f ReadPage.php` or load the code into a web browser 
 
 ## About the code
 
-The code uses cURL to read the webpage and DOMDocument to access data. It was tested with XAMPP v7.3.4 and components e.g.
+The code uses cURL to read the webpage and DOMDocument to access data. XAMPP v7.3.4 with components e.g.
 
   - PHP 7.3.4
   - Apache 2.4.39
@@ -17,4 +17,4 @@ The code uses cURL to read the webpage and DOMDocument to access data. It was te
   - OpenSSL 1.1.0g
   - phpMyAdmin 4.8.5
 
-The code can be tested with different initial webpages specified in the `$pagename` variable at the end of the PHP file. 
+was used during development. The code can be tested with different initial webpages specified in the `$pagename` variable at the end of the PHP file. 
