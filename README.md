@@ -17,4 +17,4 @@ The code uses cURL to read the webpage and DOMDocument to access data. XAMPP v7.
   - OpenSSL 1.1.0g
   - phpMyAdmin 4.8.5
 
-was used during development. The code can be tested with different initial webpages specified in the `$pagename` variable at the end of the PHP file. 
+was used during development. The code can be tested with different initial webpages specified in the `pagename` variable at the beginning of the PHP file. 
