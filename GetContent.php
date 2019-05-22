@@ -1,12 +1,12 @@
 <?php
 
-// 
+//
 // Read webpage content with cURL
 // Return the array of body and page size (in kb)
 //
     function getPage( $url ){
 
-	// Checking cURL installation	
+	// Checking cURL installation
 	if (!function_exists('curl_init')) {
 	    echo "cURL is not installed. Please install and try again.";
 	    return 0;
@@ -43,7 +43,7 @@
 
 	// Store page size in KB
         $size = round(curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD) / 1024, 1);
-	
+
 	// Close session
 	curl_close($ch);
 
@@ -51,7 +51,7 @@
 	return $pagecontent = array('body' => $body, 'size' => $size);
     }
 
-// 
+//
 // Collect data from the webpage
 // Return the JSON array of collected info
 //
@@ -84,7 +84,7 @@
 	foreach($products as $elements) {	// Read single products
 
 	    $table = [];
-		
+
 	    $item = $elements->getElementsByTagName("a");	// HTML references with tag "a"
 	    $title = trim(preg_replace("/[\r\n\xC2\xA0]+/", " ", $item[0]->nodeValue));	// Description of the HTML tag
 											// without special characters
@@ -114,14 +114,14 @@
 	    $refpage = preg_replace('/&(?![A-Za-z0-9#]{1,7};)/','&amp;', $link['body']);
 	    $ref = new \DOMDocument();		// Initiate a new DOM document
 	    @$ref->loadHTML($refpage);
-	    $xpath = new \DOMXpath($ref);	
+	    $xpath = new \DOMXpath($ref);
 
 	    // Select div class "productText" or "itemTypeGroupContainer productText"
-	    // for the detailed description of individal items 	
+	    // for the detailed description of individal items
 	    $producttext = $xpath->query('//div[@class="productText"]');
 	    if ( $producttext->length == 0) {
 		$producttext = $xpath->query('//div[@class="itemTypeGroupContainer productText"]');
-	    } 
+	    }
 	    $description = trim(preg_replace("/[\r\n\xC2\xA0]+/", " ", $producttext[0]->nodeValue));
 
 	    // Create table of results
@@ -131,9 +131,9 @@
 	}
 
     // Return JSON array
-    return json_encode( array( 
-				"results" => $results, 
-				"total" => $total  
+    return json_encode( array(
+				"results" => $results,
+				"total" => $total
 			));
 
     }
